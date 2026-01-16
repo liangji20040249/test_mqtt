@@ -94,13 +94,27 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_message(client, userdata, msg):
     global last_cmd_time
     try:
-        payload = json.loads(msg.payload.decode())
-        v = float(payload.get('v', 0.0))
-        w = float(payload.get('w', 0.0))
-        
+        print("[MQTT] msg object:", msg)
+        print("[MQTT] type:", type(msg))
+        print("[MQTT] topic:", getattr(msg, 'topic', None))
+        print("[MQTT] qos:", getattr(msg, 'qos', None), "retain:", getattr(msg, 'retain', None), "mid:", getattr(msg, 'mid', None))
+        try:
+            raw = msg.payload
+            print("[MQTT] payload (raw):", raw)
+            if isinstance(raw, (bytes, bytearray)):
+                print("[MQTT] payload (utf-8):", raw.decode('utf-8', errors='replace'))
+        except Exception as e:
+            print("[MQTT] payload read error:", e)
+        if hasattr(msg, 'properties'):
+            print("[MQTT] properties:", msg.properties)
+        print("[MQTT] available attrs:", [a for a in dir(msg) if not a.startswith('_')])
+        parsed_payload = json.loads(msg.payload.decode())
+        v = float(parsed_payload.get('v', 0.0))
+        w = float(parsed_payload.get('w', 0.0))
+
         driver.send_motion_command(v, w)
         last_cmd_time = time.time()
-        
+
     except Exception as e:
         print(f"[MQTT] Error: {e}")
 
